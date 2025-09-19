@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benim Karakter Ağacım</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        label {
+            font-size: 0.9em;
+            color: #495057;
+            font-weight: 600;
+        }
+        
+        select, input, button {
+            padding: 8px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        button {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        #tree {
+            width: 100%;
+            height: 600px;
+            background: #fafafa;
+            position: relative;
+        }
+        
+        .info-panel {
+            background: white;
+            padding: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .node-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .node-info h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        .node-template {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .node-template:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .node-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .node-title {
+            color: #764ba2;
+            font-style: italic;
+            font-size: 0.9em;
+            margin-bottom: 3px;
+        }
+        
+        .node-description {
+            color: #6c757d;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+    </style>
+    <!-- Treeviz kütüphanesini CDN'den yükle -->
+    <script src="https://cdn.jsdelivr.net/npm/treeviz@3.0.1/dist/treeviz.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌳 Karakter İlişki Ağacı</h1>
+            <p>İnteraktif karakter görselleştirme sistemi</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Görünüm Yönü:</label>
+                <select id="direction">
+                    <option value="horizontal">Yatay (Soldan Sağa)</option>
+                    <option value="vertical">Dikey (Yukarıdan Aşağı)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Veri Seti:</label>
+                <select id="dataset">
+                    <option value="fantasy">Fantastik Krallık</option>
+                    <option value="scifi">Bilim Kurgu Mürettebat</option>
+                    <option value="mystery">Gizem Romanı</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>Bağlantı Stili:</label>
+                <select id="linkStyle">
+                    <option value="quadraticBeziers">Kavisli</option>
+                    <option value="orthogonal">Dik Açılı</option>
+                    <option value="curve">Yumuşak Eğri</option>
+                </select>
+            </div>
+            
+            <button onclick="updateTree()">Güncelle</button>
+        </div>
+        
+        <div id="tree"></div>
+        
+        <div class="info-panel">
+            <h2>ℹ️ Nasıl Kullanılır?</h2>
+            <ul>
+                <li><strong>Karakterlere tıklayın:</strong> Detaylı bilgi görmek için</li>
+                <li><strong>Üzerine gelin:</strong> Hızlı bilgi için</li>
+                <li><strong>Ayarları değiştirin:</strong> Farklı görünümler için</li>
+                <li><strong>Zoom:</strong> Fare tekerleği ile yakınlaştırın</li>
+            </ul>
+            
+            <div id="nodeDetails" class="node-info" style="display: none;">
+                <h3>Karakter Detayları</h3>
+                <div id="detailsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Farklı veri setleri - Kendi karakterlerinle değiştirebilirsin!
+        const datasets = {
+            fantasy: [
+                { 
+                    id: 1, 
+                    name: "Kral Aldric", 
+                    title: "Demir Taht'ın Hükümdarı",
+                    description: "Bilge ve adil bir hükümdar",
+                    parent: null,
+                    power: 100,
+                    alignment: "İyi"
+                },
+                { 
+                    id: 2, 
+                    name: "Prenses Lyra", 
+                    title: "Işık Kılıcının Varisi",
+                    description: "Cesur ve becerikli bir savaşçı",
+                    parent: 1,
+                    power: 85,
+                    alignment: "İyi"
+                },
+                { 
+                    id: 3, 
+                    name: "Prens Darian", 
+                    title: "Gölge Lordu",
+                    description: "Gizemli güçlere sahip",
+                    parent: 1,
+                    power: 90,
+                    alignment: "Kararsız"
+                },
+                { 
+                    id: 4, 
+                    name: "Büyücü Merlin", 
+                    title: "Kraliyet Danışmanı",
+                    description: "Kadim bilgelik sahibi",
+                    parent: 1,
+                    power: 95,
+                    alignment: "İyi"
+                },
+                { 
+                    id: 5, 
+                    name: "Elara", 
+                    title: "Merlin'in Çırağı",
+                    description: "Genç ve yetenekli büyücü",
+                    parent: 4,
+                    power: 60,
+                    alignment: "İyi"
+                },
+                { 
+                    id: 6, 
+                    name: "Kaptan Garrett", 
+                    title: "Muhafız Komutanı",
+                    description: "Sadık ve güçlü",
+                    parent: 2,
+                    power: 75,
+                    alignment: "İyi"
+                },
+                { 
+                    id: 7, 
+                    name: "Morgana", 
+                    title: "Karanlık Cadı",
+                    description: "Gizli planları olan",
+                    parent: 3,
+                    power: 88,
+                    alignment: "Kötü"
+                }
+            ],
+            scifi: [
+                { 
+                    id: 1, 
+                    name: "Kaptan Nova", 
+                    title: "USS Horizon Komutanı",
+                    description: "Deneyimli uzay kaşifi",
+                    parent: null,
+                    tech: "İleri",
+                    origin: "Dünya"
+                },
+                { 
+                    id: 2, 
+                    name: "Dr. Zara", 
+                    title: "Baş Bilim Subayı",
+                    description: "Kuantum fiziği uzmanı",
+                    parent: 1,
+                    tech: "İleri",
+                    origin: "Mars Kolonisi"
+                },
+                { 
+                    id: 3, 
+                    name: "Komutan Rex", 
+                    title: "Güvenlik Şefi",
+                    description: "Eski askeri cyborg",
+                    parent: 1,
+                    tech: "Cyborg",
+                    origin: "Titan"
+                },
+                { 
+                    id: 4, 
+                    name: "AI-7", 
+                    title: "Gemi Yapay Zekası",
+                    description: "Gelişmiş öğrenen sistem",
+                    parent: 1,
+                    tech: "AI",
+                    origin: "Dijital"
+                },
+                { 
+                    id: 5, 
+                    name: "Mühendis Chen", 
+                    title: "Warp Sürücü Uzmanı",
+                    description: "Dahice mühendis",
+                    parent: 2,
+                    tech: "İleri",
+                    origin: "Europa"
+                }
+            ],
+            mystery: [
+                { 
+                    id: 1, 
+                    name: "Dedektif Stone", 
+                    title: "Baş Müfettiş",
+                    description: "Keskin zeka, soğuk mantık",
+                    parent: null,
+                    solved: 47,
+                    method: "Mantık"
+                },
+                { 
+                    id: 2, 
+                    name: "Sarah Mills", 
+                    title: "Asistan Dedektif",
+                    description: "Hızlı ve gözlemci",
+                    parent: 1,
+                    solved: 12,
+                    method: "Sezgi"
+                },
+                { 
+                    id: 3, 
+                    name: "Dr. Watson", 
+                    title: "Adli Tıp Uzmanı",
+                    description: "Kanıtların efendisi",
+                    parent: 1,
+                    solved: 23,
+                    method: "Bilim"
+                },
+                { 
+                    id: 4, 
+                    name: "Maya", 
+                    title: "Hacker",
+                    description: "Dijital iz sürücü",
+                    parent: 2,
+                    solved: 8,
+                    method: "Teknoloji"
+                }
+            ]
+        };
+
+        let myTree = null;
+
+        // Ağacı başlat
+        function initTree() {
+            const direction = document.getElementById('direction').value;
+            const linkStyle = document.getElementById('linkStyle').value;
+            const dataset = document.getElementById('dataset').value;
+            
+            // Önceki ağacı temizle
+            document.getElementById('tree').innerHTML = '';
+            
+            // Yeni ağaç oluştur
+            myTree = Treeviz.create({
+                htmlId: "tree",
+                idKey: "id",
+                hasFlatData: true,
+                relationnalField: "parent",
+                isHorizontal: direction === 'horizontal',
+                nodeWidth: 180,
+                nodeHeight: 100,
+                mainAxisNodeSpacing: "auto",
+                linkShape: linkStyle,
+                linkColor: () => "#9b59b6",
+                linkWidth: () => 3,
+                duration: 800,
+                hasZoom: true,
+                hasPan: true,
+                renderNode: function(node) {
+                    const data = node.data;
+                    let extraInfo = '';
+                    
+                    // Veri setine göre ekstra bilgi ekle
+                    if (dataset === 'fantasy' && data.power) {
+                        extraInfo = `<div style="color: #e74c3c; font-size: 0.8em;">Güç: ${data.power} | ${data.alignment}</div>`;
+                    } else if (dataset === 'scifi' && data.tech) {
+                        extraInfo = `<div style="color: #3498db; font-size: 0.8em;">${data.tech} | ${data.origin}</div>`;
+                    } else if (dataset === 'mystery' && data.solved) {
+                        extraInfo = `<div style="color: #27ae60; font-size: 0.8em;">Çözülen: ${data.solved} | ${data.method}</div>`;
+                    }
+                    
+                    return `
+                        <div class="node-template">
+                            <div class="node-name">${data.name}</div>
+                            <div class="node-title">${data.title}</div>
+                            <div class="node-description">${data.description}</div>
+                            ${extraInfo}
+                        </div>
+                    `;
+                },
+                onNodeClick: function(node) {
+                    showNodeDetails(node.data);
+                },
+                onNodeMouseEnter: function(node) {
+                    // Fare üzerine gelince küçük efekt
+                    console.log("Üzerinde: " + node.data.name);
+                },
+                onNodeMouseLeave: function(node) {
+                    // Fare ayrılınca
+                    console.log("Ayrıldı: " + node.data.name);
+                }
+            });
+            
+            // Veriyi yükle
+            myTree.refresh(datasets[dataset]);
+        }
+
+        // Karakter detaylarını göster
+        function showNodeDetails(data) {
+            const detailsDiv = document.getElementById('nodeDetails');
+            const contentDiv = document.getElementById('detailsContent');
+            
+            let html = `
+                <p><strong>İsim:</strong> ${data.name}</p>
+                <p><strong>Ünvan:</strong> ${data.title}</p>
+                <p><strong>Açıklama:</strong> ${data.description}</p>
+            `;
+            
+            // Ekstra özellikleri göster
+            if (data.power !== undefined) {
+                html += `<p><strong>Güç Seviyesi:</strong> ${data.power}/100</p>`;
+                html += `<p><strong>Taraf:</strong> ${data.alignment}</p>`;
+            }
+            if (data.tech !== undefined) {
+                html += `<p><strong>Teknoloji:</strong> ${data.tech}</p>`;
+                html += `<p><strong>Köken:</strong> ${data.origin}</p>`;
+            }
+            if (data.solved !== undefined) {
+                html += `<p><strong>Çözülen Vakalar:</strong> ${data.solved}</p>`;
+                html += `<p><strong>Yöntem:</strong> ${data.method}</p>`;
+            }
+            
+            contentDiv.innerHTML = html;
+            detailsDiv.style.display = 'block';
+        }
+
+        // Ağacı güncelle
+        function updateTree() {
+            initTree();
+        }
+
+        // Sayfa yüklendiğinde başlat
+        window.onload = function() {
+            initTree();
+        };
+    </script>
+</body>
+</html>
