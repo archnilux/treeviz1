@@ -1,469 +1,251 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Benim Karakter Ağacım</title>
+    <meta charset="utf-8">
+    <title>Multiple Parent Tree Visualization</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        h1 {
-            margin: 0;
-            font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .controls {
-            background: #f8f9fa;
-            padding: 20px;
-            border-bottom: 1px solid #dee2e6;
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        
-        label {
-            font-size: 0.9em;
-            color: #495057;
-            font-weight: 600;
-        }
-        
-        select, input, button {
-            padding: 8px 15px;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-        
-        select:focus, input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        button {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        #tree {
-            width: 100%;
-            height: 600px;
-            background: #fafafa;
-            position: relative;
-        }
-        
-        .info-panel {
-            background: white;
-            padding: 20px;
-            border-top: 1px solid #dee2e6;
-        }
-        
-        .node-info {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        
-        .node-info h3 {
-            margin-top: 0;
-            color: #495057;
-        }
-        
-        .node-template {
-            text-align: center;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            border: 2px solid #667eea;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: all 0.3s;
+        .node {
             cursor: pointer;
         }
         
-        .node-template:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        .node circle {
+            stroke-width: 3px;
         }
         
-        .node-name {
-            font-weight: bold;
-            font-size: 1.1em;
-            color: #2c3e50;
-            margin-bottom: 5px;
+        .node text {
+            font: 12px sans-serif;
+            fill: #333;
         }
         
-        .node-title {
-            color: #764ba2;
-            font-style: italic;
-            font-size: 0.9em;
-            margin-bottom: 3px;
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 2px;
         }
         
-        .node-description {
-            color: #6c757d;
-            font-size: 0.85em;
-            margin-top: 5px;
+        .extra-link {
+            fill: none;
+            stroke: #999;
+            stroke-width: 2px;
+            stroke-dasharray: 5,5;
+        }
+        
+        .tree {
+            margin: 50px;
+            overflow: auto;
         }
     </style>
-    <script src="./d3.min.js"></script>
-    <script src="./treeviz.js">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🌳 Karakter İlişki Ağacı</h1>
-            <p>İnteraktif karakter görselleştirme sistemi</p>
-        </div>
-        
-        <div class="controls">
-            <div class="control-group">
-                <label>Görünüm Yönü:</label>
-                <select id="direction">
-                    <option value="horizontal">Yatay (Soldan Sağa)</option>
-                    <option value="vertical">Dikey (Yukarıdan Aşağı)</option>
-                </select>
-            </div>
-            
-            <div class="control-group">
-                <label>Veri Seti:</label>
-                <select id="dataset">
-                    <option value="fantasy">Fantastik Krallık</option>
-                    <option value="scifi">Bilim Kurgu Mürettebat</option>
-                    <option value="mystery">Gizem Romanı</option>
-                </select>
-            </div>
-            
-            <div class="control-group">
-                <label>Bağlantı Stili:</label>
-                <select id="linkStyle">
-                    <option value="quadraticBeziers">Kavisli</option>
-                    <option value="orthogonal">Dik Açılı</option>
-                    <option value="curve">Yumuşak Eğri</option>
-                </select>
-            </div>
-            
-            <button onclick="updateTree()">Güncelle</button>
-        </div>
-        
-        <div id="tree"></div>
-        
-        <div class="info-panel">
-            <h2>ℹ️ Nasıl Kullanılır?</h2>
-            <ul>
-                <li><strong>Karakterlere tıklayın:</strong> Detaylı bilgi görmek için</li>
-                <li><strong>Üzerine gelin:</strong> Hızlı bilgi için</li>
-                <li><strong>Ayarları değiştirin:</strong> Farklı görünümler için</li>
-                <li><strong>Zoom:</strong> Fare tekerleği ile yakınlaştırın</li>
-            </ul>
-            
-            <div id="nodeDetails" class="node-info" style="display: none;">
-                <h3>Karakter Detayları</h3>
-                <div id="detailsContent"></div>
-            </div>
-        </div>
-    </div>
-
+    <div id="tree"></div>
+    
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.8.2.min.js"></script>
     <script>
-        // Farklı veri setleri - Kendi karakterlerinle değiştirebilirsin!
-        const datasets = {
-            fantasy: [
-                { 
-                    id: 1, 
-                    name: "Kral Aldric", 
-                    title: "Demir Taht'ın Hükümdarı",
-                    description: "Bilge ve adil bir hükümdar",
-                    parent: null,
-                    power: 100,
-                    alignment: "İyi"
-                },
-                { 
-                    id: 2, 
-                    name: "Prenses Lyra", 
-                    title: "Işık Kılıcının Varisi",
-                    description: "Cesur ve becerikli bir savaşçı",
-                    parent: 1,
-                    power: 85,
-                    alignment: "İyi"
-                },
-                { 
-                    id: 3, 
-                    name: "Prens Darian", 
-                    title: "Gölge Lordu",
-                    description: "Gizemli güçlere sahip",
-                    parent: 1,
-                    power: 90,
-                    alignment: "Kararsız"
-                },
-                { 
-                    id: 4, 
-                    name: "Büyücü Merlin", 
-                    title: "Kraliyet Danışmanı",
-                    description: "Kadim bilgelik sahibi",
-                    parent: 1,
-                    power: 95,
-                    alignment: "İyi"
-                },
-                { 
-                    id: 5, 
-                    name: "Elara", 
-                    title: "Merlin'in Çırağı",
-                    description: "Genç ve yetenekli büyücü",
-                    parent: 4,
-                    power: 60,
-                    alignment: "İyi"
-                },
-                { 
-                    id: 6, 
-                    name: "Kaptan Garrett", 
-                    title: "Muhafız Komutanı",
-                    description: "Sadık ve güçlü",
-                    parent: 2,
-                    power: 75,
-                    alignment: "İyi"
-                },
-                { 
-                    id: 7, 
-                    name: "Morgana", 
-                    title: "Karanlık Cadı",
-                    description: "Gizli planları olan",
-                    parent: 3,
-                    power: 88,
-                    alignment: "Kötü"
-                }
-            ],
-            scifi: [
-                { 
-                    id: 1, 
-                    name: "Kaptan Nova", 
-                    title: "USS Horizon Komutanı",
-                    description: "Deneyimli uzay kaşifi",
-                    parent: null,
-                    tech: "İleri",
-                    origin: "Dünya"
-                },
-                { 
-                    id: 2, 
-                    name: "Dr. Zara", 
-                    title: "Baş Bilim Subayı",
-                    description: "Kuantum fiziği uzmanı",
-                    parent: 1,
-                    tech: "İleri",
-                    origin: "Mars Kolonisi"
-                },
-                { 
-                    id: 3, 
-                    name: "Komutan Rex", 
-                    title: "Güvenlik Şefi",
-                    description: "Eski askeri cyborg",
-                    parent: 1,
-                    tech: "Cyborg",
-                    origin: "Titan"
-                },
-                { 
-                    id: 4, 
-                    name: "AI-7", 
-                    title: "Gemi Yapay Zekası",
-                    description: "Gelişmiş öğrenen sistem",
-                    parent: 1,
-                    tech: "AI",
-                    origin: "Dijital"
-                },
-                { 
-                    id: 5, 
-                    name: "Mühendis Chen", 
-                    title: "Warp Sürücü Uzmanı",
-                    description: "Dahice mühendis",
-                    parent: 2,
-                    tech: "İleri",
-                    origin: "Europa"
-                }
-            ],
-            mystery: [
-                { 
-                    id: 1, 
-                    name: "Dedektif Stone", 
-                    title: "Baş Müfettiş",
-                    description: "Keskin zeka, soğuk mantık",
-                    parent: null,
-                    solved: 47,
-                    method: "Mantık"
-                },
-                { 
-                    id: 2, 
-                    name: "Sarah Mills", 
-                    title: "Asistan Dedektif",
-                    description: "Hızlı ve gözlemci",
-                    parent: 1,
-                    solved: 12,
-                    method: "Sezgi"
-                },
-                { 
-                    id: 3, 
-                    name: "Dr. Watson", 
-                    title: "Adli Tıp Uzmanı",
-                    description: "Kanıtların efendisi",
-                    parent: 1,
-                    solved: 23,
-                    method: "Bilim"
-                },
-                { 
-                    id: 4, 
-                    name: "Maya", 
-                    title: "Hacker",
-                    description: "Dijital iz sürücü",
-                    parent: 2,
-                    solved: 8,
-                    method: "Teknoloji"
-                }
-            ]
-        };
+        $(document).ready(function () {
+            function BuildDAGTree(treeData, extraLinks, treeContainerDom) {
+                var margin = { top: 40, right: 120, bottom: 20, left: 120 };
+                var width = 960 - margin.right - margin.left;
+                var height = 500 - margin.top - margin.bottom;
 
-        let myTree = null;
-
-        // Ağacı başlat
-        function initTree() {
-            const direction = document.getElementById('direction').value;
-            const linkStyle = document.getElementById('linkStyle').value;
-            const dataset = document.getElementById('dataset').value;
-            
-            // Önceki ağacı temizle
-            document.getElementById('tree').innerHTML = '';
-            
-            // Yeni ağaç oluştur
-            myTree = Treeviz.create({
-                htmlId: "tree",
-                idKey: "id",
-                hasFlatData: true,
-                relationnalField: "parent",
-                isHorizontal: direction === 'horizontal',
-                nodeWidth: 180,
-                nodeHeight: 100,
-                mainAxisNodeSpacing: "auto",
-                linkShape: linkStyle,
-                linkColor: () => "#9b59b6",
-                linkWidth: () => 3,
-                duration: 800,
-                hasZoom: true,
-                hasPan: true,
-                renderNode: function(node) {
-                    const data = node.data;
-                    let extraInfo = '';
+                var i = 0, duration = 750;
+                var tree = d3.layout.tree()
+                    .size([height, width]);
                     
-                    // Veri setine göre ekstra bilgi ekle
-                    if (dataset === 'fantasy' && data.power) {
-                        extraInfo = `<div style="color: #e74c3c; font-size: 0.8em;">Güç: ${data.power} | ${data.alignment}</div>`;
-                    } else if (dataset === 'scifi' && data.tech) {
-                        extraInfo = `<div style="color: #3498db; font-size: 0.8em;">${data.tech} | ${data.origin}</div>`;
-                    } else if (dataset === 'mystery' && data.solved) {
-                        extraInfo = `<div style="color: #27ae60; font-size: 0.8em;">Çözülen: ${data.solved} | ${data.method}</div>`;
+                var diagonal = d3.svg.diagonal()
+                    .projection(function (d) { return [d.x, d.y]; });
+                    
+                var svg = d3.select(treeContainerDom).append("svg")
+                    .attr("width", width + margin.right + margin.left)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                    
+                root = treeData;
+
+                update(root);
+                
+                function update(source) {
+                    // Compute the new tree layout
+                    var nodes = tree.nodes(root).reverse(),
+                        links = tree.links(nodes);
+                        
+                    // Normalize for fixed-depth
+                    nodes.forEach(function (d) { d.y = d.depth * 100; });
+                    
+                    // Create a map of nodes by id for easy lookup
+                    var nodeMap = {};
+                    nodes.forEach(function(d) {
+                        nodeMap[d.id || (d.id = ++i)] = d;
+                    });
+                    
+                    // Declare the nodes
+                    var node = svg.selectAll("g.node")
+                        .data(nodes, function (d) { return d.id || (d.id = ++i); });
+                        
+                    // Enter the nodes
+                    var nodeEnter = node.enter().append("g")
+                        .attr("class", "node")
+                        .attr("transform", function (d) {
+                            return "translate(" + source.x0 + "," + source.y0 + ")";
+                        }).on("click", nodeclick);
+                        
+                    nodeEnter.append("circle")
+                        .attr("r", 10)
+                        .attr("stroke", function (d) { 
+                            return d.children || d._children ? "steelblue" : "#00c13f"; 
+                        })
+                        .style("fill", function (d) { 
+                            return d.children || d._children ? "lightsteelblue" : "#fff"; 
+                        });
+                        
+                    nodeEnter.append("text")
+                        .attr("y", function (d) {
+                            return d.children || d._children ? -18 : 18;
+                        })
+                        .attr("dy", ".35em")
+                        .attr("text-anchor", "middle")
+                        .text(function (d) { return d.name; })
+                        .style("fill-opacity", 1e-6);
+                        
+                    // Transition nodes to their new position
+                    var nodeUpdate = node.transition()
+                        .duration(duration)
+                        .attr("transform", function (d) { 
+                            return "translate(" + d.x + "," + d.y + ")"; 
+                        });
+                        
+                    nodeUpdate.select("circle")
+                        .attr("r", 10)
+                        .style("fill", function (d) { 
+                            return d._children ? "lightsteelblue" : "#fff"; 
+                        });
+                        
+                    nodeUpdate.select("text")
+                        .style("fill-opacity", 1);
+                        
+                    // Transition exiting nodes to the parent's new position
+                    var nodeExit = node.exit().transition()
+                        .duration(duration)
+                        .attr("transform", function (d) { 
+                            return "translate(" + source.x + "," + source.y + ")"; 
+                        })
+                        .remove();
+                        
+                    nodeExit.select("circle")
+                        .attr("r", 1e-6);
+                        
+                    nodeExit.select("text")
+                        .style("fill-opacity", 1e-6);
+                        
+                    // Update the links
+                    var link = svg.selectAll("path.link")
+                        .data(links, function (d) { return d.target.id; });
+                        
+                    // Enter the links
+                    link.enter().insert("path", "g")
+                        .attr("class", "link")
+                        .attr("d", function (d) {
+                            var o = { x: source.x0, y: source.y0 };
+                            return diagonal({ source: o, target: o });
+                        });
+                        
+                    // Transition links to their new position
+                    link.transition()
+                        .duration(duration)
+                        .attr("d", diagonal);
+                        
+                    // Transition exiting nodes to the parent's new position
+                    link.exit().transition()
+                        .duration(duration)
+                        .attr("d", function (d) {
+                            var o = { x: source.x, y: source.y };
+                            return diagonal({ source: o, target: o });
+                        })
+                        .remove();
+                        
+                    // Remove old extra links
+                    svg.selectAll("path.extra-link").remove();
+                    
+                    // Add extra parent links (for multiple parents)
+                    if (extraLinks && extraLinks.length > 0) {
+                        extraLinks.forEach(function(link) {
+                            var sourceNode = null;
+                            var targetNode = null;
+                            
+                            // Find nodes by name or id
+                            nodes.forEach(function(n) {
+                                if (n.name === link.source || n.id === link.source) {
+                                    sourceNode = n;
+                                }
+                                if (n.name === link.target || n.id === link.target) {
+                                    targetNode = n;
+                                }
+                            });
+                            
+                            if (sourceNode && targetNode) {
+                                svg.insert("path", "g")
+                                    .attr("class", "extra-link")
+                                    .attr("d", diagonal({ 
+                                        source: sourceNode, 
+                                        target: targetNode 
+                                    }));
+                            }
+                        });
                     }
                     
-                    return `
-                        <div class="node-template">
-                            <div class="node-name">${data.name}</div>
-                            <div class="node-title">${data.title}</div>
-                            <div class="node-description">${data.description}</div>
-                            ${extraInfo}
-                        </div>
-                    `;
-                },
-                onNodeClick: function(node) {
-                    showNodeDetails(node.data);
-                },
-                onNodeMouseEnter: function(node) {
-                    // Fare üzerine gelince küçük efekt
-                    console.log("Üzerinde: " + node.data.name);
-                },
-                onNodeMouseLeave: function(node) {
-                    // Fare ayrılınca
-                    console.log("Ayrıldı: " + node.data.name);
+                    // Stash the old positions for transition
+                    nodes.forEach(function (d) {
+                        d.x0 = d.x;
+                        d.y0 = d.y;
+                    });
                 }
-            });
-            
-            // Veriyi yükle
-            myTree.refresh(datasets[dataset]);
-        }
 
-        // Karakter detaylarını göster
-        function showNodeDetails(data) {
-            const detailsDiv = document.getElementById('nodeDetails');
-            const contentDiv = document.getElementById('detailsContent');
-            
-            let html = `
-                <p><strong>İsim:</strong> ${data.name}</p>
-                <p><strong>Ünvan:</strong> ${data.title}</p>
-                <p><strong>Açıklama:</strong> ${data.description}</p>
-            `;
-            
-            // Ekstra özellikleri göster
-            if (data.power !== undefined) {
-                html += `<p><strong>Güç Seviyesi:</strong> ${data.power}/100</p>`;
-                html += `<p><strong>Taraf:</strong> ${data.alignment}</p>`;
+                // Toggle children on click
+                function nodeclick(d) {
+                    if (d.children) {
+                        d._children = d.children;
+                        d.children = null;
+                    } else {
+                        d.children = d._children;
+                        d._children = null;
+                    }
+                    update(d);
+                }
             }
-            if (data.tech !== undefined) {
-                html += `<p><strong>Teknoloji:</strong> ${data.tech}</p>`;
-                html += `<p><strong>Köken:</strong> ${data.origin}</p>`;
-            }
-            if (data.solved !== undefined) {
-                html += `<p><strong>Çözülen Vakalar:</strong> ${data.solved}</p>`;
-                html += `<p><strong>Yöntem:</strong> ${data.method}</p>`;
-            }
-            
-            contentDiv.innerHTML = html;
-            detailsDiv.style.display = 'block';
-        }
 
-        // Ağacı güncelle
-        function updateTree() {
-            initTree();
-        }
-
-        // Sayfa yüklendiğinde başlat
-        window.onload = function() {
-            initTree();
-        };
+            // Ana hiyerarşik yapı (primary parent ilişkileri)
+            var treeData = {
+                "name": "Node A",
+                "children": [
+                    {
+                        "name": "Node B",
+                        "children": [
+                            {
+                                "name": "Node D",
+                                "children": []
+                            },
+                            {
+                                "name": "Node E",
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Node C",
+                        "children": []
+                    }
+                ]
+            };
+            
+            // Ekstra parent bağlantıları
+            // Node C'nin Node D'ye de bağlantısı var (ikinci parent)
+            var extraLinks = [
+                { source: "Node C", target: "Node D" }
+            ];
+            
+            BuildDAGTree(treeData, extraLinks, "#tree");
+        });
     </script>
 </body>
 </html>
